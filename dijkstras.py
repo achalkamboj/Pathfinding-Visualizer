@@ -38,6 +38,9 @@ class Spot:
 
 	def is_open(self):
 		return self.color == GREEN
+	
+	def isVisiting(self):
+		return self.color == GREEN
 
 	def is_barrier(self):
 		return self.color == BLACK
@@ -58,6 +61,12 @@ class Spot:
 		self.color = RED
 
 	def make_open(self):
+		self.color = GREEN
+
+	def makeVisited(self):
+		self.color = RED
+
+	def makeVisiting(self):
 		self.color = GREEN
 
 	def make_barrier(self):
@@ -106,50 +115,37 @@ def reconstruct_path(came_from, current, draw):
 
 
 def algorithm(draw, grid, start, end):
-	count = 0
-	open_set = PriorityQueue()
-	open_set.put((0, count, start))
-	came_from = {}
-	g_score = {spot: float("inf") for row in grid for spot in row}
-	g_score[start] = 0
-	f_score = {spot: float("inf") for row in grid for spot in row}
-	f_score[start] = h(start.get_pos(), end.get_pos())
+    visited = {spot: False for row in grid for spot in row}
+    distance = {spot: math.inf for row in grid for spot in row}
+    distance[start] = 0
+    came_from = {}
+    priority_queue = PriorityQueue()
+    priority_queue.put((0, start))
+    while not priority_queue.empty():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+        current = priority_queue.get()[1]
 
-	open_set_hash = {start}
-
-	while not open_set.empty():
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.quit()
-
-		current = open_set.get()[2]
-		open_set_hash.remove(current)
-
-		if current == end:
-			pygame. mixer. music. stop()
-			reconstruct_path(came_from, end, draw)
-			end.make_end()
-			return True
-
-		for neighbor in current.neighbors:
-			temp_g_score = g_score[current] + 1
-
-			if temp_g_score < g_score[neighbor]:
-				came_from[neighbor] = current
-				g_score[neighbor] = temp_g_score
-				f_score[neighbor] = temp_g_score + h(neighbor.get_pos(), end.get_pos())
-				if neighbor not in open_set_hash:
-					count += 1
-					open_set.put((f_score[neighbor], count, neighbor))
-					open_set_hash.add(neighbor)
-					neighbor.make_open()
-
-		draw()
-
-		if current != start:
-			current.make_closed()
-
-	return False
+        if visited[current]:
+            continue
+        visited[current] = True
+        if current == end:
+            pygame. mixer. music. stop()
+            reconstruct_path(came_from, end, draw)
+            return True
+        if current != start:
+            current.makeVisited()
+        for neighbor in current.neighbors:
+            weight = 1
+            if distance[current] + weight < distance[neighbor]:
+                came_from[neighbor] = current
+                distance[neighbor] = distance[current] + weight
+                priority_queue.put((distance[neighbor], neighbor))
+            if neighbor != end and neighbor != start and not visited[neighbor]:
+                neighbor.makeVisiting()
+        draw()
+    return False
 
 
 def make_grid(rows, width):
